@@ -1,19 +1,64 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"os"
+	"runtime"
+	"strings"
 
 	"github.com/implocell/cleanc/localdeps"
 	"github.com/implocell/cleanc/writer"
 )
 
-func main() {
-	res, err := localdeps.FindAll("./testdata/javascript")
+type CommandLine struct{}
+
+func (cli *CommandLine) printUsage() {
+	fmt.Println("Usage: ")
+	fmt.Println("target -path <PATH> is required")
+	fmt.Println("target -path <PATH> -all - collects all data")
+	fmt.Println("target -path <PATH> -unused - finds all empty exports")
+	fmt.Println("to save as a file add -save behind arguments, saves it as result.json at current location")
+}
+
+func (cli *CommandLine) validateArgs() {
+	if len(os.Args) < 2 {
+		cli.printUsage()
+		runtime.Goexit()
+	}
+}
+
+func (cli *CommandLine) collectAll(target string, args []string) {
+	res, err := localdeps.FindAll(target)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	for _, arg := range args {
+		if strings.Contains(arg, "save") {
+			cli.saveToFile(res)
+		}
+	}
+
+}
+
+func (cli *CommandLine) collectUnusedExports(target string, args []string) {
+	res, err := localdeps.FindAll(target)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	uExports := localdeps.EmptyExports(res)
+
+	for _, arg := range args {
+		if strings.Contains(arg, "save") {
+			cli.saveToFile(uExports)
+		}
+	}
+}
+
+func (cli *CommandLine) saveToFile(res interface{}) {
 	f, err := os.Create("results.json")
 
 	if err != nil {
@@ -24,4 +69,46 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func (cli *CommandLine) run() {
+	cli.validateArgs()
+
+	addTarget := flag.NewFlagSet("target", flag.ExitOnError)
+	addTargetDir := addTarget.String("path", "", "Target directory")
+	addTargetAll := addTarget.Bool("all", false, "scans all directories")
+	addTargetUnused := addTarget.Bool("unused", false, "scans all unused exports")
+
+	switch os.Args[1] {
+	case "target":
+		err := addTarget.Parse(os.Args[2:])
+		if err != nil {
+			os.Exit(1)
+		}
+	default:
+		cli.printUsage()
+		runtime.Goexit()
+	}
+
+	if addTarget.Parsed() {
+		if *addTargetDir == "" {
+			fmt.Println("empty target")
+			addTarget.Usage()
+			runtime.Goexit()
+		}
+		if *addTargetAll {
+			cli.collectAll(*addTargetDir, os.Args)
+		}
+		if *addTargetUnused {
+			cli.collectUnusedExports(*addTargetDir, os.Args)
+		}
+	}
+}
+
+func main() {
+	defer os.Exit(0)
+
+	cli := CommandLine{}
+
+	cli.run()
 }

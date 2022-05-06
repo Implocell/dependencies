@@ -2,12 +2,16 @@ package localdeps
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 )
+
+type Exports struct {
+	Export string   `json:"export"`
+	UsedBy []string `json:"usedBy"`
+}
 
 type Import struct {
 	Filename string   `json:"filename"`
@@ -15,13 +19,13 @@ type Import struct {
 }
 
 type FileDeps struct {
-	Filename string   `json:"filename"`
-	Imports  []Import `json:"imports"`
-	Exports  []string `json:"exports"`
+	Filename string    `json:"filename"`
+	Imports  []Import  `json:"imports"`
+	Exports  []Exports `json:"exports"`
 }
 
-func Find(file fs.DirEntry, path string) (FileDeps, error) {
-	filePath := filepath.Join(path, file.Name())
+func Find(fileName string, path string) (FileDeps, error) {
+	filePath := filepath.Join(path, fileName)
 
 	content, err := os.ReadFile(filePath)
 	if err != nil {
@@ -73,7 +77,7 @@ func findImports(content []byte, path string) []Import {
 	return imports
 }
 
-func findExports(content []byte) []string {
+func findExports(content []byte) []Exports {
 	re := regexp.MustCompile(`export default (\w*)|export \w* (\w+)`)
 
 	strs := re.FindAllStringSubmatch(string(content), -1)
@@ -86,21 +90,17 @@ func findExports(content []byte) []string {
 		return nil
 	}
 
-	var exports []string
+	var exports []Exports
 
 	for _, sub := range strs {
 
-		var exported []string
+		if len(sub[1]) > 0 {
+			exports = append(exports, Exports{Export: sub[1]})
+		}
 
 		if len(sub[2]) > 0 {
-			exports = append(exports, sub[2])
+			exports = append(exports, Exports{Export: sub[2]})
 		}
-
-		if len(sub[1]) > 0 {
-			exports = append(exports, sub[1])
-		}
-
-		exports = append(exports, exported...)
 
 	}
 	return exports
@@ -136,28 +136,78 @@ func findImportFile(f, path string) (string, error) {
 }
 
 func FindAll(root string) ([]FileDeps, error) {
-	var fileDeps []FileDeps
-	d, err := os.ReadDir(root)
-	if err != nil {
-		return nil, err
-	}
 
-	path, err := filepath.Abs(root)
-	if err != nil {
-		return nil, err
-	}
+	fileDeps, err := findAllByDirectory(root)
 
-	for _, f := range d {
-		fileDep, err := Find(f, path)
-		if err != nil {
-			continue
-		}
-		fileDeps = append(fileDeps, fileDep)
+	if err != nil {
+		fmt.Println(err)
 	}
 
 	if len(fileDeps) == 0 {
 		return nil, fmt.Errorf("failed to find any files")
 	}
+	findImportAttachExport(fileDeps)
+	return fileDeps, nil
+}
+
+func findAllByDirectory(root string) ([]FileDeps, error) {
+	var fileDeps []FileDeps
+
+	err := filepath.Walk(root,
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.IsDir() {
+				if !isValidFileType(info.Name()) {
+					return nil
+				}
+
+				dirPath := filepath.Dir(path)
+
+				fileDep, err := Find(info.Name(), dirPath)
+				if err != nil {
+					return err
+				}
+
+				fileDeps = append(fileDeps, fileDep)
+			}
+			return nil
+		})
+
+	if err != nil {
+		return nil, err
+	}
 
 	return fileDeps, nil
+}
+
+func isValidFileType(filename string) bool {
+	extensions := [2]string{".js", ".jsx"}
+	var isValid bool
+	for _, ext := range extensions {
+		if ok := strings.HasSuffix(filename, ext); ok {
+			isValid = ok
+		}
+	}
+	return isValid
+
+}
+
+func findImportAttachExport(fileDeps []FileDeps) {
+	for _, f := range fileDeps {
+		for _, fi := range f.Imports {
+			for y, ff := range fileDeps {
+				if ff.Filename == fi.Filename {
+					for i, ex := range ff.Exports {
+						for _, imports := range fi.Imported {
+							if strings.Contains(ex.Export, imports) {
+								fileDeps[y].Exports[i].UsedBy = append(ff.Exports[i].UsedBy, f.Filename)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }

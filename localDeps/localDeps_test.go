@@ -47,7 +47,7 @@ func TestLocalDeps(t *testing.T) {
 			}
 		}
 
-		res, err := localdeps.Find(file, path)
+		res, err := localdeps.Find(file.Name(), path)
 
 		if err != nil {
 			t.Fatalf("error from find function: %s\n", err)
@@ -85,7 +85,7 @@ func TestLocalDeps(t *testing.T) {
 			}
 		}
 
-		res, err := localdeps.Find(file, path)
+		res, err := localdeps.Find(file.Name(), path)
 
 		if err != nil {
 			t.Fatalf("error from find function: %s\n", err)
@@ -94,7 +94,7 @@ func TestLocalDeps(t *testing.T) {
 		expected := localdeps.FileDeps{
 			Filename: filepath.Join(path, file.Name()),
 			Imports:  []localdeps.Import{},
-			Exports:  []string{"hello"},
+			Exports:  []localdeps.Exports{{Export: "hello"}},
 		}
 
 		if equal := reflect.DeepEqual(res, expected); !equal {
@@ -114,7 +114,7 @@ func TestLocalDeps(t *testing.T) {
 			}
 		}
 
-		res, err := localdeps.Find(file, path)
+		res, err := localdeps.Find(file.Name(), path)
 
 		if err != nil {
 			t.Fatalf("error from find function: %s\n", err)
@@ -123,7 +123,17 @@ func TestLocalDeps(t *testing.T) {
 		expected := localdeps.FileDeps{
 			Filename: filepath.Join(path, file.Name()),
 			Imports:  []localdeps.Import{},
-			Exports:  []string{"Nothing", "Something", "someone"},
+			Exports: []localdeps.Exports{
+				{
+					Export: "Nothing",
+				},
+				{
+					Export: "Something",
+				},
+				{
+					Export: "someone",
+				},
+			},
 		}
 
 		if equal := reflect.DeepEqual(res, expected); !equal {
@@ -143,7 +153,7 @@ func TestLocalDeps(t *testing.T) {
 			}
 		}
 
-		res, err := localdeps.Find(file, path)
+		res, err := localdeps.Find(file.Name(), path)
 
 		if err != nil {
 			t.Fatalf("error from find function: %s\n", err)
@@ -160,7 +170,17 @@ func TestLocalDeps(t *testing.T) {
 					Filename: filepath.Join(path, "3.js"),
 					Imported: []string{"Nothing", "Something"},
 				}},
-			Exports: []string{"what", "krumspring", "nojo"},
+			Exports: []localdeps.Exports{
+				{
+					Export: "what",
+				},
+				{
+					Export: "krumspring",
+				},
+				{
+					Export: "nojo",
+				},
+			},
 		}
 
 		if equal := reflect.DeepEqual(res, expected); !equal {
@@ -179,7 +199,7 @@ func TestLocalDeps(t *testing.T) {
 			}
 		}
 
-		res, err := localdeps.Find(file, path)
+		res, err := localdeps.Find(file.Name(), path)
 
 		if err != nil {
 			t.Fatalf("error from find function: %s\n", err)

@@ -2,7 +2,6 @@ package main_test
 
 import (
 	"fmt"
-	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -16,17 +15,8 @@ const JAVSCRIPT_DIR = "./testdata/javascript"
 
 func TestMain(t *testing.T) {
 	t.Run("it finds import in file 2 and writes to file", func(t *testing.T) {
-		d, _ := os.ReadDir(JAVSCRIPT_DIR)
-		path, _ := filepath.Abs(JAVSCRIPT_DIR)
 
-		var file fs.DirEntry
-		for _, f := range d {
-			if f.Name() == "2.js" {
-				file = f
-			}
-		}
-
-		res, err := localdeps.Find(file, path)
+		res, err := localdeps.FindAll("./testdata/javascript")
 
 		if err != nil {
 			t.Fatalf("error from find function: %s\n", err)
@@ -51,11 +41,24 @@ func TestMain(t *testing.T) {
 			t.Fatal(err)
 		}
 		expected := fmt.Sprintf(
-			`{"filename":"%s","imports":[{"filename":"%s","imported":["hello"]},{"filename":"%s","imported":["Nothing","Something"]}],"exports":null}`,
-			filepath.Join(
-				path, file.Name()),
-			filepath.Join(path, "1.js"),
-			filepath.Join(path, "3.js"),
+			`[{"filename":"%s","imports":[],"exports":[{"export":"hello","usedBy":["%s","%s"]}]},{"filename":"%s","imports":[{"filename":"%s","imported":["hello"]},{"filename":"%s","imported":["Nothing","Something"]}],"exports":null},{"filename":"%s","imports":[],"exports":[{"export":"Nothing","usedBy":["%s","%s","%s"]},{"export":"Something","usedBy":["%s","%s"]},{"export":"someone","usedBy":null}]},{"filename":"%s","imports":[{"filename":"%s","imported":["hello"]},{"filename":"%s","imported":["Nothing","Something"]}],"exports":[{"export":"what","usedBy":null},{"export":"krumspring","usedBy":null},{"export":"nojo","usedBy":null}]},{"filename":"%s","imports":[{"filename":"%s","imported":["Nothing"]}],"exports":null}]`,
+			filepath.Join(JAVSCRIPT_DIR, "1.js"),
+			filepath.Join(JAVSCRIPT_DIR, "2.js"),
+			filepath.Join(JAVSCRIPT_DIR, "4.js"),
+			filepath.Join(JAVSCRIPT_DIR, "2.js"),
+			filepath.Join(JAVSCRIPT_DIR, "1.js"),
+			filepath.Join(JAVSCRIPT_DIR, "3.js"),
+			filepath.Join(JAVSCRIPT_DIR, "3.js"),
+			filepath.Join(JAVSCRIPT_DIR, "2.js"),
+			filepath.Join(JAVSCRIPT_DIR, "4.js"),
+			filepath.Join(JAVSCRIPT_DIR, "/components/comp1.js"),
+			filepath.Join(JAVSCRIPT_DIR, "2.js"),
+			filepath.Join(JAVSCRIPT_DIR, "4.js"),
+			filepath.Join(JAVSCRIPT_DIR, "4.js"),
+			filepath.Join(JAVSCRIPT_DIR, "1.js"),
+			filepath.Join(JAVSCRIPT_DIR, "3.js"),
+			filepath.Join(JAVSCRIPT_DIR, "/components/comp1.js"),
+			filepath.Join(JAVSCRIPT_DIR, "3.js"),
 		)
 
 		if string(f) != expected {
