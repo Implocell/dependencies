@@ -1,9 +1,11 @@
 package main
 
 import (
+	"embed"
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"runtime"
 	"strings"
@@ -85,6 +87,7 @@ func (cli *CommandLine) run() {
 		if err != nil {
 			os.Exit(1)
 		}
+
 	default:
 		cli.printUsage()
 		runtime.Goexit()
@@ -103,6 +106,36 @@ func (cli *CommandLine) run() {
 			cli.collectUnusedExports(*addTargetDir, os.Args)
 		}
 	}
+
+	for _, arg := range os.Args {
+		if strings.Contains(arg, "web") {
+			fmt.Println("Serving report at localhost:3000/index.html")
+			server(":3000")
+		}
+	}
+
+}
+
+func handleData(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "./results.json")
+}
+
+//go:embed frontend/index.html
+//go:embed frontend/sorter.js
+var content embed.FS
+
+func server(port string) {
+
+	fs := http.FileServer(http.FS(content))
+	http.Handle("/", fs)
+	http.HandleFunc("/data", handleData)
+
+	err := http.ListenAndServe(port, nil)
+
+	if err != nil {
+		runtime.Goexit()
+	}
+
 }
 
 func main() {
