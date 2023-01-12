@@ -2,13 +2,12 @@ package main_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/implocell/cleanc/localdeps"
-	"github.com/implocell/cleanc/writer"
+	"github.com/implocell/dependencies/localdeps"
+	"github.com/implocell/dependencies/writer"
 )
 
 const JAVSCRIPT_DIR = "./testdata/javascript"
@@ -22,7 +21,7 @@ func TestMain(t *testing.T) {
 			t.Fatalf("error from find function: %s\n", err)
 		}
 
-		tempFile, err := ioutil.TempFile(".", "*")
+		tempFile, err := os.CreateTemp(".", "*")
 		defer os.Remove(tempFile.Name())
 
 		if err != nil {

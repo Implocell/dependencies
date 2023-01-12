@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/implocell/cleanc/writer"
+	"github.com/implocell/dependencies/writer"
 )
 
 func TestJSONWriter(t *testing.T) {

@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+var extensions = [...]string{".js", ".jsx", ".ts", ".tsx"}
+
 type Exports struct {
 	Export string   `json:"export"`
 	UsedBy []string `json:"usedBy"`
@@ -108,8 +110,6 @@ func findExports(content []byte) []Exports {
 
 //!OH BOY NEEDS REWRITE
 func findImportFile(f, path string) (string, error) {
-	extensions := [2]string{".js", ".jsx"}
-
 	fullPath := filepath.Join(path, f)
 
 	fileName := filepath.Base(fullPath)
@@ -183,7 +183,6 @@ func findAllByDirectory(root string) ([]FileDeps, error) {
 }
 
 func isValidFileType(filename string) bool {
-	extensions := [2]string{".js", ".jsx"}
 	var isValid bool
 	for _, ext := range extensions {
 		if ok := strings.HasSuffix(filename, ext); ok {

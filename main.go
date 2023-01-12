@@ -10,8 +10,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/implocell/cleanc/localdeps"
-	"github.com/implocell/cleanc/writer"
+	"github.com/implocell/dependencies/localdeps"
+	"github.com/implocell/dependencies/writer"
 )
 
 type CommandLine struct{}

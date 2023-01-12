@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/implocell/cleanc/localdeps"
+	"github.com/implocell/dependencies/localdeps"
 )
 
 const JAVSCRIPT_DIR = "../testdata/javascript"
